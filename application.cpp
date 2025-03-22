@@ -2,14 +2,7 @@
 
 bool Application::Initialize()
 {
-    m_instance = getInstance();
-    m_adapter = getAdapter(m_instance);
-    m_device = getDevice(m_adapter);
-    inspectDevice(m_device);
-
-    m_queue = wgpuDeviceGetQueue(m_device);
-
-    wgpuAdapterRelease(m_adapter);
+    m_instance = webGPUUtils::getInstance();
 
     if (!glfwInit())
     {
@@ -18,6 +11,7 @@ bool Application::Initialize()
     }
 
     m_window = glfwCreateWindow(640, 480, "Learn WebGPU", nullptr, nullptr);
+    m_surface = glfwGetWGPUSurface(m_instance, m_window);
 
     if (!m_window)
     {
@@ -26,7 +20,15 @@ bool Application::Initialize()
         return 1;
     }
 
-    return false;
+    m_adapter = webGPUUtils::getAdapter(m_instance, m_surface);
+    m_device = webGPUUtils::getDevice(m_adapter);
+    webGPUUtils::inspectDevice(m_device);
+
+    m_queue = wgpuDeviceGetQueue(m_device);
+
+    wgpuAdapterRelease(m_adapter);
+
+    return true;
 }
 
 void Application::Terminate()
@@ -35,6 +37,7 @@ void Application::Terminate()
 
     wgpuQueueRelease(m_queue);
     wgpuDeviceRelease(m_device);
+    wgpuSurfaceRelease(m_surface);
 
     glfwTerminate();
 }

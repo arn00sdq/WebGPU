@@ -6,11 +6,15 @@ int main(int, char **)
 {
 
     Application app;
-    app.Initialize();
+    if (!app.Initialize())
+    {
+        return 1;
+    }
 
     app.testCommandQueue();
 
     app.MainLoop();
+
 
     while (app.IsRunning())
     {

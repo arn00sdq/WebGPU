@@ -5,20 +5,26 @@
 #include <vector>
 #include <array>
 #include <webgpu/webgpu.h>
+#include "glfw3webgpu/glfw3webgpu.h"
 #include <GLFW/glfw3.h>
 
 #include <cassert>
 
-WGPUAdapter requestAdapterSync(WGPUInstance instance, WGPURequestAdapterOptions const *options);
+namespace webGPUUtils
+{
+    WGPUAdapter requestAdapterSync(WGPUInstance instance,
+                                   WGPURequestAdapterOptions const *options);
 
-WGPUDevice requestDeviceSync(WGPUAdapter adapter, WGPUDeviceDescriptor const *descriptor);
+    WGPUDevice requestDeviceSync(WGPUAdapter adapter,
+                                 WGPUDeviceDescriptor const *descriptor);
 
-void inspectDevice(WGPUDevice device);
+    void inspectDevice(WGPUDevice device);
 
-WGPUInstance getInstance();
+    WGPUInstance getInstance();
 
-WGPUAdapter getAdapter(WGPUInstance const &instance);
+    WGPUAdapter getAdapter(WGPUInstance const &instance, WGPUSurface surface);
 
-WGPUDevice getDevice(WGPUAdapter adapter);
+    WGPUDevice getDevice(WGPUAdapter adapter);
+}
 
 #endif

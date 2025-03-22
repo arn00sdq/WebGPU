@@ -17,8 +17,9 @@ add_executable( WebGPU
 )
 
 add_subdirectory(webgpu)
+add_subdirectory(glfw3webgpu)
 
-target_link_libraries(WebGPU PRIVATE webgpu glfw)
+target_link_libraries(WebGPU PRIVATE webgpu glfw glfw3webgpu)
 
 target_copy_webgpu_binaries(WebGPU)
 

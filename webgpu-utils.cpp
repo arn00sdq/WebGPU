@@ -1,6 +1,7 @@
 #include "webgpu-utils.hpp"
 
-WGPUAdapter requestAdapterSync(WGPUInstance instance, WGPURequestAdapterOptions const *options)
+WGPUAdapter webGPUUtils::requestAdapterSync(WGPUInstance instance,
+                                            WGPURequestAdapterOptions const *options)
 {
     struct UserData
     {
@@ -9,7 +10,9 @@ WGPUAdapter requestAdapterSync(WGPUInstance instance, WGPURequestAdapterOptions 
     };
     UserData userData;
 
-    auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status, WGPUAdapter adapter, char const *message, void *pUserData)
+    auto onAdapterRequestEnded = [](WGPURequestAdapterStatus status,
+                                    WGPUAdapter adapter,
+                                    char const *message, void *pUserData)
     {
         UserData &userData = *reinterpret_cast<UserData *>(pUserData);
         if (status == WGPURequestAdapterStatus_Success)
@@ -36,7 +39,8 @@ WGPUAdapter requestAdapterSync(WGPUInstance instance, WGPURequestAdapterOptions 
     return userData.adapter;
 }
 
-WGPUDevice requestDeviceSync(WGPUAdapter adapter, WGPUDeviceDescriptor const *descriptor)
+WGPUDevice webGPUUtils::requestDeviceSync(WGPUAdapter adapter,
+                                          WGPUDeviceDescriptor const *descriptor)
 {
     struct UserData
     {
@@ -45,7 +49,9 @@ WGPUDevice requestDeviceSync(WGPUAdapter adapter, WGPUDeviceDescriptor const *de
     };
     UserData userData;
 
-    auto onDeviceRequestEnded = [](WGPURequestDeviceStatus status, WGPUDevice device, char const *message, void *pUserData)
+    auto onDeviceRequestEnded = [](WGPURequestDeviceStatus status,
+                                   WGPUDevice device,
+                                   char const *message, void *pUserData)
     {
         UserData &userData = *reinterpret_cast<UserData *>(pUserData);
         if (status == WGPURequestDeviceStatus_Success)
@@ -71,7 +77,7 @@ WGPUDevice requestDeviceSync(WGPUAdapter adapter, WGPUDeviceDescriptor const *de
 }
 
 // We also add an inspect device function:
-void inspectDevice(WGPUDevice device)
+void webGPUUtils::inspectDevice(WGPUDevice device)
 {
     std::vector<WGPUFeatureName> features;
     size_t featureCount = wgpuDeviceEnumerateFeatures(device, nullptr);
@@ -102,11 +108,10 @@ void inspectDevice(WGPUDevice device)
         std::cout << " - maxTextureDimension2D: " << limits.limits.maxTextureDimension2D << std::endl;
         std::cout << " - maxTextureDimension3D: " << limits.limits.maxTextureDimension3D << std::endl;
         std::cout << " - maxTextureArrayLayers: " << limits.limits.maxTextureArrayLayers << std::endl;
-        // [...] Extra device limits
     }
 }
 
-WGPUInstance getInstance()
+WGPUInstance webGPUUtils::getInstance()
 {
     WGPUInstanceDescriptor desc = {};
 #ifdef WEBGPU_BACKEND_DAWN
@@ -124,16 +129,17 @@ WGPUInstance getInstance()
     return wgpuCreateInstance(&desc);
 }
 
-WGPUAdapter getAdapter(WGPUInstance const &instance)
+WGPUAdapter webGPUUtils::getAdapter(WGPUInstance const &instance, WGPUSurface surface)
 {
     WGPURequestAdapterOptions adapterOpts = {};
     adapterOpts.nextInChain = nullptr;
-    WGPUAdapter adapter = requestAdapterSync(instance, &adapterOpts);
+    adapterOpts.compatibleSurface = surface;
+    WGPUAdapter adapter = webGPUUtils::requestAdapterSync(instance, &adapterOpts);
     std::cout << "Got adapter: " << adapter << std::endl;
     return adapter;
 }
 
-WGPUDevice getDevice(WGPUAdapter adapter)
+WGPUDevice webGPUUtils::getDevice(WGPUAdapter adapter)
 {
     WGPUDeviceDescriptor deviceDesc = {};
     deviceDesc.nextInChain = nullptr;
@@ -142,14 +148,15 @@ WGPUDevice getDevice(WGPUAdapter adapter)
     deviceDesc.requiredLimits = nullptr;
     deviceDesc.defaultQueue.nextInChain = nullptr;
     deviceDesc.defaultQueue.label = "The default queue";
-    deviceDesc.deviceLostCallback = [](WGPUDeviceLostReason reason, char const *message, void * /* pUserData */)
+    deviceDesc.deviceLostCallback = [](WGPUDeviceLostReason reason,
+                                       char const *message, void * /* pUserData */)
     {
         std::cout << "Device lost: reason " << reason;
         if (message)
             std::cout << " (" << message << ")";
         std::cout << std::endl;
     };
-    WGPUDevice device = requestDeviceSync(adapter, &deviceDesc);
+    WGPUDevice device = webGPUUtils::requestDeviceSync(adapter, &deviceDesc);
     std::cout << "Got device: " << device << std::endl;
     return device;
 }

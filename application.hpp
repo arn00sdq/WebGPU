@@ -18,9 +18,9 @@ public:
 
 private:
 
-
     WGPUInstance m_instance;
     GLFWwindow *m_window;
+    WGPUSurface m_surface;
     WGPUQueue m_queue;
     WGPUAdapter m_adapter;
     WGPUDevice m_device;
