@@ -8,11 +8,11 @@ class Application
 public:
     bool Initialize();
 
-    void Terminate();
-
     void MainLoop();
 
     void Draw(WGPUTextureView targetView);
+
+    void Terminate();
 
     bool IsRunning();
 

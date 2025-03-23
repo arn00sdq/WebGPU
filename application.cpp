@@ -11,6 +11,8 @@ bool Application::Initialize()
     }
 
     m_window = glfwCreateWindow(640, 480, "Learn WebGPU", nullptr, nullptr);
+
+    // connect our GLFW window to WebGPU
     m_surface = glfwGetWGPUSurface(m_instance, m_window);
 
     if (!m_window)
@@ -27,6 +29,7 @@ bool Application::Initialize()
     // WebGPU device has a single queue, which is used to send both commands and data
     m_queue = wgpuDeviceGetQueue(m_device);
 
+    // configure surface
     webGPUUtils::initializeSurface(m_surface, m_adapter, m_device);
 
     wgpuAdapterRelease(m_adapter);
@@ -34,32 +37,31 @@ bool Application::Initialize()
     return true;
 }
 
-void Application::Terminate()
-{
-    glfwDestroyWindow(m_window);
-
-    wgpuQueueRelease(m_queue);
-    wgpuDeviceRelease(m_device);
-    wgpuSurfaceRelease(m_surface);
-
-    glfwTerminate();
-}
-
 void Application::MainLoop()
 {
     glfwPollEvents();
 
+    //1. Get the next target texture view
     WGPUTextureView targetView = GetNextSurfaceTextureView();
     if (!targetView)
         return;
 
+    //2. Draw things
     Draw(targetView);
+
+    //3. present the next texture of its swap chain
+    wgpuSurfacePresent(m_surface);
+
+    wgpuDeviceTick(m_device);
 }
 
 void Application::Draw(WGPUTextureView targetView)
 {
+    // 1. Create command encoder 
     WGPUCommandEncoder encoder = webGPUUtils::createEncoder(m_device);
     WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
+
+    //2. Encode render pas
     wgpuRenderPassEncoderEnd(renderPass);
     wgpuRenderPassEncoderRelease(renderPass);
 
@@ -67,18 +69,12 @@ void Application::Draw(WGPUTextureView targetView)
     wgpuCommandEncoderRelease(encoder);
 
     std::cout << "Submitting command..." << std::endl;
-    // only sends commands 
+    //3. submit
     wgpuQueueSubmit(m_queue, 1, &command);
     wgpuCommandBufferRelease(command);
     std::cout << "Command submitted." << std::endl;
 
     wgpuTextureViewRelease(targetView);
-    wgpuSurfacePresent(m_surface);
-}
-
-bool Application::IsRunning()
-{
-    return !glfwWindowShouldClose(m_window);
 }
 
 WGPUTextureView Application::GetNextSurfaceTextureView()
@@ -108,6 +104,22 @@ WGPUTextureView Application::GetNextSurfaceTextureView()
     wgpuTextureRelease(surfaceTexture.texture);
 
     return targetView;
+}
+
+void Application::Terminate()
+{
+    glfwDestroyWindow(m_window);
+
+    wgpuQueueRelease(m_queue);
+    wgpuDeviceRelease(m_device);
+    wgpuSurfaceRelease(m_surface);
+
+    glfwTerminate();
+}
+
+bool Application::IsRunning()
+{
+    return !glfwWindowShouldClose(m_window);
 }
 
 void Application::testCommandQueue()
