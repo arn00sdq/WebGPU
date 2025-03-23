@@ -12,18 +12,27 @@ public:
 
     void MainLoop();
 
+    void Draw(WGPUTextureView targetView);
+
     bool IsRunning();
 
     void testCommandQueue();
 
 private:
+    /**
+     * @brief Ask each frame the next available texture
+     * @return A valid view
+     */
+    WGPUTextureView GetNextSurfaceTextureView();
 
     WGPUInstance m_instance;
-    GLFWwindow *m_window;
-    WGPUSurface m_surface;
-    WGPUQueue m_queue;
     WGPUAdapter m_adapter;
     WGPUDevice m_device;
+
+    WGPUSurface m_surface;
+    WGPUQueue m_queue;
+
+    GLFWwindow *m_window;
 };
 
 #endif

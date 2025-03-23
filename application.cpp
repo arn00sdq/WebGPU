@@ -24,7 +24,10 @@ bool Application::Initialize()
     m_device = webGPUUtils::getDevice(m_adapter);
     webGPUUtils::inspectDevice(m_device);
 
+    // WebGPU device has a single queue, which is used to send both commands and data
     m_queue = wgpuDeviceGetQueue(m_device);
+
+    webGPUUtils::initializeSurface(m_surface, m_adapter, m_device);
 
     wgpuAdapterRelease(m_adapter);
 
@@ -45,11 +48,66 @@ void Application::Terminate()
 void Application::MainLoop()
 {
     glfwPollEvents();
+
+    WGPUTextureView targetView = GetNextSurfaceTextureView();
+    if (!targetView)
+        return;
+
+    Draw(targetView);
+}
+
+void Application::Draw(WGPUTextureView targetView)
+{
+    WGPUCommandEncoder encoder = webGPUUtils::createEncoder(m_device);
+    WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
+    wgpuRenderPassEncoderEnd(renderPass);
+    wgpuRenderPassEncoderRelease(renderPass);
+
+    WGPUCommandBuffer command = webGPUUtils::createCommandBuffer(encoder);
+    wgpuCommandEncoderRelease(encoder);
+
+    std::cout << "Submitting command..." << std::endl;
+    // only sends commands 
+    wgpuQueueSubmit(m_queue, 1, &command);
+    wgpuCommandBufferRelease(command);
+    std::cout << "Command submitted." << std::endl;
+
+    wgpuTextureViewRelease(targetView);
+    wgpuSurfacePresent(m_surface);
 }
 
 bool Application::IsRunning()
 {
     return !glfwWindowShouldClose(m_window);
+}
+
+WGPUTextureView Application::GetNextSurfaceTextureView()
+{
+    /* container for the multiple things that this function returns */
+    WGPUSurfaceTexture surfaceTexture;
+    wgpuSurfaceGetCurrentTexture(m_surface, &surfaceTexture);
+
+    if (surfaceTexture.status != WGPUSurfaceGetCurrentTextureStatus_Success)
+    {
+        return nullptr;
+    }
+
+    WGPUTextureViewDescriptor viewDescriptor;
+    viewDescriptor.nextInChain = nullptr;
+    viewDescriptor.label = "Surface texture view";
+    viewDescriptor.format = wgpuTextureGetFormat(surfaceTexture.texture);
+    viewDescriptor.dimension = WGPUTextureViewDimension_2D;
+    viewDescriptor.baseMipLevel = 0;
+    viewDescriptor.mipLevelCount = 1;
+    viewDescriptor.baseArrayLayer = 0;
+    viewDescriptor.arrayLayerCount = 1;
+    viewDescriptor.aspect = WGPUTextureAspect_All;
+    // represent a sub-part of the texture
+    // surfaceTexture.texture is the texture that we must draw on during this frame.
+    WGPUTextureView targetView = wgpuTextureCreateView(surfaceTexture.texture, &viewDescriptor);
+    wgpuTextureRelease(surfaceTexture.texture);
+
+    return targetView;
 }
 
 void Application::testCommandQueue()

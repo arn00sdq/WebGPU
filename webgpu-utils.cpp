@@ -160,3 +160,64 @@ WGPUDevice webGPUUtils::getDevice(WGPUAdapter adapter)
     std::cout << "Got device: " << device << std::endl;
     return device;
 }
+
+void webGPUUtils::initializeSurface(WGPUSurface surface,
+                                    WGPUAdapter adapter, WGPUDevice device)
+{
+    /* size config */
+    WGPUSurfaceConfiguration config = {};
+    config.nextInChain = nullptr;
+    config.width = 640;
+    config.height = 480;
+
+    /* format config (channels, size per channels, channels type  )*/
+    WGPUTextureFormat surfaceFormat = wgpuSurfaceGetPreferredFormat(surface, adapter);
+    config.format = surfaceFormat;
+    // And we do not need any particular view format:
+    config.viewFormatCount = 0;
+    config.viewFormats = nullptr;
+    config.usage = WGPUTextureUsage_RenderAttachment;
+    config.device = device;
+    config.presentMode = WGPUPresentMode_Fifo;
+    config.alphaMode = WGPUCompositeAlphaMode_Auto;
+
+    wgpuSurfaceConfigure(surface, &config);
+}
+
+WGPUCommandEncoder webGPUUtils::createEncoder(WGPUDevice device)
+{
+    WGPURenderPassDescriptor renderPassDesc = {};
+    renderPassDesc.nextInChain = nullptr;
+
+    WGPUCommandEncoderDescriptor encoderDesc = {};
+    encoderDesc.nextInChain = nullptr;
+    encoderDesc.label = "My command encoder";
+    return wgpuDeviceCreateCommandEncoder(device, &encoderDesc);
+}
+WGPURenderPassEncoder webGPUUtils::createRenderPass(WGPUCommandEncoder encoder, WGPUTextureView targetView)
+{
+    WGPURenderPassColorAttachment renderPassColorAttachment = {};
+    renderPassColorAttachment.view = targetView;
+    renderPassColorAttachment.loadOp = WGPULoadOp_Clear;
+    renderPassColorAttachment.storeOp = WGPUStoreOp_Store;
+    renderPassColorAttachment.clearValue = WGPUColor{0.9, 0.1, 0.2, 1.0};
+    renderPassColorAttachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor renderPassDesc = {};
+    renderPassDesc.nextInChain = nullptr;
+    renderPassDesc.colorAttachmentCount = 1;
+    renderPassDesc.colorAttachments = &renderPassColorAttachment;
+    renderPassDesc.depthStencilAttachment = nullptr;
+    renderPassDesc.timestampWrites = nullptr;
+
+    return wgpuCommandEncoderBeginRenderPass(encoder, &renderPassDesc);
+}
+
+WGPUCommandBuffer webGPUUtils::createCommandBuffer(WGPUCommandEncoder encoder)
+{
+    // Finally encode and submit the render pass
+    WGPUCommandBufferDescriptor cmdBufferDescriptor = {};
+    cmdBufferDescriptor.nextInChain = nullptr;
+    cmdBufferDescriptor.label = "Command buffer";
+    return wgpuCommandEncoderFinish(encoder, &cmdBufferDescriptor);
+}
