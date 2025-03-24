@@ -2,6 +2,7 @@
 #define WEBGPU_CODINGUTILITIES_UTILITIES_H_
 
 #include <iostream>
+#include <ostream>
 #include <vector>
 #include <array>
 #include <webgpu/webgpu.h>

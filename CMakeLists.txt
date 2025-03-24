@@ -19,7 +19,7 @@ add_executable( WebGPU
 add_subdirectory(webgpu)
 add_subdirectory(glfw3webgpu)
 
-target_link_libraries(WebGPU PRIVATE webgpu glfw glfw3webgpu)
+target_link_libraries(WebGPU PRIVATE glfw webgpu  glfw3webgpu)
 
 target_copy_webgpu_binaries(WebGPU)
 
@@ -29,3 +29,16 @@ set_target_properties(WebGPU PROPERTIES
     CXX_EXTENSIONS OFF
     COMPILE_WARNING_AS_ERROR ON
 )
+
+if (MSVC)
+	target_compile_options(WebGPU PRIVATE /W4)
+else()
+	target_compile_options(WebGPU PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+if (XCODE)
+	set_target_properties(App PROPERTIES
+		XCODE_GENERATE_SCHEME ON
+		XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
+	)
+endif()

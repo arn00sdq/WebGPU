@@ -186,9 +186,6 @@ void webGPUUtils::initializeSurface(WGPUSurface surface,
 
 WGPUCommandEncoder webGPUUtils::createEncoder(WGPUDevice device)
 {
-    WGPURenderPassDescriptor renderPassDesc = {};
-    renderPassDesc.nextInChain = nullptr;
-
     WGPUCommandEncoderDescriptor encoderDesc = {};
     encoderDesc.nextInChain = nullptr;
     encoderDesc.label = "My command encoder";

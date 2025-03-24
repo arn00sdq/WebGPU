@@ -2,19 +2,16 @@
 
 bool Application::Initialize()
 {
-    m_instance = webGPUUtils::getInstance();
-
     if (!glfwInit())
     {
         std::cerr << "Could not initialize GLFW!" << std::endl;
         return 1;
     }
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    
     m_window = glfwCreateWindow(640, 480, "Learn WebGPU", nullptr, nullptr);
-
-    // connect our GLFW window to WebGPU
-    m_surface = glfwGetWGPUSurface(m_instance, m_window);
-
     if (!m_window)
     {
         std::cerr << "Could not open window!" << std::endl;
@@ -22,13 +19,18 @@ bool Application::Initialize()
         return 1;
     }
 
+    m_instance = webGPUUtils::getInstance();
+    
+    // connect our GLFW window to WebGPU
+    m_surface = glfwGetWGPUSurface(m_instance, m_window);
+
     m_adapter = webGPUUtils::getAdapter(m_instance, m_surface);
     m_device = webGPUUtils::getDevice(m_adapter);
     webGPUUtils::inspectDevice(m_device);
-
+    
     // WebGPU device has a single queue, which is used to send both commands and data
     m_queue = wgpuDeviceGetQueue(m_device);
-
+    
     // configure surface
     webGPUUtils::initializeSurface(m_surface, m_adapter, m_device);
 
