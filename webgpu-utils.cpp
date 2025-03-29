@@ -216,5 +216,6 @@ WGPUCommandBuffer webGPUUtils::createCommandBuffer(WGPUCommandEncoder encoder)
     WGPUCommandBufferDescriptor cmdBufferDescriptor = {};
     cmdBufferDescriptor.nextInChain = nullptr;
     cmdBufferDescriptor.label = "Command buffer";
+    // immuablle
     return wgpuCommandEncoderFinish(encoder, &cmdBufferDescriptor);
 }

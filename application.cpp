@@ -59,8 +59,10 @@ void Application::MainLoop()
 
 void Application::Draw(WGPUTextureView targetView)
 {
-    // 1. Create command encoder 
+    // 1. Create command encoder ( struct containing all command, render pass and compute pass )
     WGPUCommandEncoder encoder = webGPUUtils::createEncoder(m_device);
+
+    // descriptor (color , depth ,etc)
     WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
 
     //2. Encode render pas
@@ -68,6 +70,8 @@ void Application::Draw(WGPUTextureView targetView)
     wgpuRenderPassEncoderRelease(renderPass);
 
     WGPUCommandBuffer command = webGPUUtils::createCommandBuffer(encoder);
+
+    // release because we've created immuatable memory space so don't' need encoder anymore
     wgpuCommandEncoderRelease(encoder);
 
     std::cout << "Submitting command..." << std::endl;
