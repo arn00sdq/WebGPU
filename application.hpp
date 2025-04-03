@@ -25,12 +25,26 @@ private:
      */
     WGPUTextureView GetNextSurfaceTextureView();
 
+    void InitializePipeline();
+
+    void messingWithBuffer();
+
+    void InitializeBuffer();
+
     WGPUInstance m_instance;
     WGPUAdapter m_adapter;
     WGPUDevice m_device;
 
     WGPUSurface m_surface;
     WGPUQueue m_queue;
+
+    WGPUTextureFormat m_surfaceFormat = WGPUTextureFormat_Undefined;
+    WGPURenderPipeline m_renderPipeline;
+
+    WGPUBuffer m_buffer1;
+    WGPUBuffer m_buffer2;
+    WGPUBuffer m_vertexBuffer;
+    uint32_t m_vertexCount;
 
     GLFWwindow *m_window;
 };

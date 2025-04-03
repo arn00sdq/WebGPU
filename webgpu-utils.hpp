@@ -1,13 +1,23 @@
 #ifndef WEBGPU_CODINGUTILITIES_UTILITIES_H_
 #define WEBGPU_CODINGUTILITIES_UTILITIES_H_
 
-#include <iostream>
-#include <ostream>
-#include <vector>
-#include <array>
-#include <webgpu/webgpu.h>
-#include "glfw3webgpu/glfw3webgpu.h"
+#include "webgpu/webgpu.hpp"
+#ifdef WEBGPU_BACKEND_WGPU
+#include <webgpu/wgpu.h>
+#endif // WEBGPU_BACKEND_WGPU
+
 #include <GLFW/glfw3.h>
+#include <glfw3webgpu.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif // __EMSCRIPTEN__
+
+#include <iostream>
+#include <cassert>
+#include <vector>
+#include <ostream>
+#include <array>
 
 #include <cassert>
 
@@ -27,15 +37,17 @@ namespace webGPUUtils
 
     WGPUDevice getDevice(WGPUAdapter adapter);
 
-    void initializeSurface(WGPUSurface surface,
-                           WGPUAdapter adapter, WGPUDevice device);
+    WGPURequiredLimits getRequiredLimits(WGPUAdapter adapter);
+
+    WGPUTextureFormat initializeSurface(WGPUSurface surface,
+                                        WGPUAdapter adapter, WGPUDevice device);
 
     /**
-     * @param device 
+     * @param device
      * @return A command encoder for the draw call
      */
     WGPUCommandEncoder createEncoder(WGPUDevice device);
-    
+
     /**
      * @brief Create render pass that clears the screen with our color
      * @param encoder Encoder for the draw call
@@ -48,6 +60,13 @@ namespace webGPUUtils
      * @note Content timeline GPU. Queue timeline GPU
      */
     WGPUCommandBuffer createCommandBuffer(WGPUCommandEncoder encoder);
+
+    WGPUShaderModule createShaderModule(WGPUDevice device);
+
+    WGPURenderPipeline createRenderPipeline(WGPUDevice device,
+                                            WGPUShaderModule shaderModule,
+                                            WGPUTextureFormat surfaceFormat);
+
 }
 
 #endif

@@ -4,7 +4,6 @@
 
 int main(int, char **)
 {
-
     Application app;
     if (!app.Initialize())
     {

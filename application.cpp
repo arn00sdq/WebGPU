@@ -1,16 +1,34 @@
 #include "application.hpp"
+#include "webgpu-utils.hpp"
+
+// We define a function that hides implementation-specific variants of device polling:
+void wgpuPollEvents([[maybe_unused]] WGPUDevice device, [[maybe_unused]] bool yieldToWebBrowser)
+{
+#if defined(WEBGPU_BACKEND_DAWN)
+    wgpuDeviceTick(device);
+#elif defined(WEBGPU_BACKEND_WGPU)
+    wgpuDevicePoll(device, false, nullptr);
+#elif defined(WEBGPU_BACKEND_EMSCRIPTEN)
+    if (yieldToWebBrowser)
+    {
+        emscripten_sleep(100);
+    }
+#endif
+}
 
 bool Application::Initialize()
 {
+    std::cout << "0" << std::endl;
     if (!glfwInit())
     {
         std::cerr << "Could not initialize GLFW!" << std::endl;
         return 1;
     }
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     m_window = glfwCreateWindow(640, 480, "Learn WebGPU", nullptr, nullptr);
     if (!m_window)
     {
@@ -19,39 +37,86 @@ bool Application::Initialize()
         return 1;
     }
 
-    m_instance = webGPUUtils::getInstance();
-    
+    m_instance = wgpuCreateInstance(nullptr);
+
     // connect our GLFW window to WebGPU
     m_surface = glfwGetWGPUSurface(m_instance, m_window);
 
     m_adapter = webGPUUtils::getAdapter(m_instance, m_surface);
     m_device = webGPUUtils::getDevice(m_adapter);
     webGPUUtils::inspectDevice(m_device);
-    
+
     // WebGPU device has a single queue, which is used to send both commands and data
     m_queue = wgpuDeviceGetQueue(m_device);
-    
+
     // configure surface
-    webGPUUtils::initializeSurface(m_surface, m_adapter, m_device);
+    m_surfaceFormat = webGPUUtils::initializeSurface(m_surface, m_adapter, m_device);
 
     wgpuAdapterRelease(m_adapter);
 
+    InitializePipeline();
+
+    InitializeBuffer();
+
     return true;
+}
+
+void Application::InitializePipeline()
+{
+    WGPUShaderModule shaderModule = webGPUUtils::createShaderModule(m_device);
+    if (shaderModule == nullptr)
+    {
+        std::cerr << "Error: shaderModule is null!" << std::endl;
+    }
+
+    m_renderPipeline = webGPUUtils::createRenderPipeline(m_device, shaderModule, m_surfaceFormat);
+    if (m_renderPipeline == nullptr)
+    {
+        std::cerr << "Error: m_renderPipeline is null!" << std::endl;
+    }
+
+    wgpuShaderModuleRelease(shaderModule);
+}
+
+void Application::InitializeBuffer()
+{
+    std::vector<float> vertexData = {
+        // Define a first triangle:
+        -0.1, -0.5,
+        +0.5, -0.5,
+        +0.0, +0.5,
+
+        // Add a second triangle:
+        -0.55f, -0.5,
+        -0.05f, +0.5,
+        -0.55f, +0.5};
+
+    m_vertexCount = static_cast<uint32_t>(vertexData.size() / 2);
+
+    // Create vertex buffer
+    WGPUBufferDescriptor bufferDesc{};
+    bufferDesc.nextInChain = nullptr;
+    bufferDesc.size = vertexData.size() * sizeof(float);
+    bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Vertex; // Vertex usage here!
+    bufferDesc.mappedAtCreation = false;
+    m_vertexBuffer = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
+
+    wgpuQueueWriteBuffer(m_queue, m_vertexBuffer, 0, vertexData.data(), bufferDesc.size);
 }
 
 void Application::MainLoop()
 {
     glfwPollEvents();
 
-    //1. Get the next target texture view
+    // 1. Get the next target texture view
     WGPUTextureView targetView = GetNextSurfaceTextureView();
     if (!targetView)
         return;
 
-    //2. Draw things
+    // 2. Draw things
     Draw(targetView);
 
-    //3. present the next texture of its swap chain
+    // 3. present the next texture of its swap chain
     wgpuSurfacePresent(m_surface);
 
     wgpuDeviceTick(m_device);
@@ -64,18 +129,25 @@ void Application::Draw(WGPUTextureView targetView)
 
     // descriptor (color , depth ,etc)
     WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
+    wgpuRenderPassEncoderSetPipeline(renderPass, m_renderPipeline);
+    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, m_vertexBuffer, 0, wgpuBufferGetSize(m_vertexBuffer));
+    wgpuRenderPassEncoderDraw(renderPass, m_vertexCount, 1, 0, 0);
 
-    //2. Encode render pas
+    // 2. Encode render pas
     wgpuRenderPassEncoderEnd(renderPass);
     wgpuRenderPassEncoderRelease(renderPass);
 
     WGPUCommandBuffer command = webGPUUtils::createCommandBuffer(encoder);
-
+    if (command == nullptr)
+    {
+        std::cerr << "Error: Command buffer is null!" << std::endl;
+        return;
+    }
     // release because we've created immuatable memory space so don't' need encoder anymore
     wgpuCommandEncoderRelease(encoder);
 
     std::cout << "Submitting command..." << std::endl;
-    //3. submit
+    // 3. submit
     wgpuQueueSubmit(m_queue, 1, &command);
     wgpuCommandBufferRelease(command);
     std::cout << "Command submitted." << std::endl;
@@ -112,8 +184,16 @@ WGPUTextureView Application::GetNextSurfaceTextureView()
     return targetView;
 }
 
+bool Application::IsRunning()
+{
+    return !glfwWindowShouldClose(m_window);
+}
+
 void Application::Terminate()
 {
+    wgpuBufferRelease(m_vertexBuffer);
+
+    wgpuRenderPipelineRelease(m_renderPipeline);
     glfwDestroyWindow(m_window);
 
     wgpuQueueRelease(m_queue);
@@ -123,9 +203,83 @@ void Application::Terminate()
     glfwTerminate();
 }
 
-bool Application::IsRunning()
+////
+//  TOOLS TO UNDERSTAND
+////
+
+void Application::messingWithBuffer()
 {
-    return !glfwWindowShouldClose(m_window);
+    WGPUBufferDescriptor bufferDesc = {};
+    bufferDesc.nextInChain = nullptr;
+    bufferDesc.label = "Some GPU-side data buffer";
+    bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_CopySrc;
+    bufferDesc.size = 16;
+    bufferDesc.mappedAtCreation = false;
+    m_buffer1 = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
+
+    WGPUBufferDescriptor bufferDesc2 = {};
+    bufferDesc2.nextInChain = nullptr;
+    bufferDesc2.label = "Output buffer";
+    bufferDesc2.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+    bufferDesc2.size = 16;
+    bufferDesc2.mappedAtCreation = false;
+    m_buffer2 = wgpuDeviceCreateBuffer(m_device, &bufferDesc2);
+
+    std::vector<uint8_t> numbers(16);
+    for (uint8_t i = 0; i < 16; ++i)
+        numbers[i] = i;
+
+    wgpuQueueWriteBuffer(m_queue, m_buffer1, 0, numbers.data(), numbers.size());
+
+    WGPUCommandEncoder encoder = webGPUUtils::createEncoder(m_device);
+
+    wgpuCommandEncoderCopyBufferToBuffer(encoder, m_buffer1, 0, m_buffer2, 0, 16);
+
+    WGPUCommandBuffer command = webGPUUtils::createCommandBuffer(encoder);
+
+    wgpuCommandEncoderRelease(encoder);
+    wgpuQueueSubmit(m_queue, 1, &command);
+    wgpuCommandBufferRelease(command);
+
+    struct Context
+    {
+        bool ready;
+        WGPUBuffer buffer;
+    };
+
+    auto onBuffer2Mapped = [](WGPUBufferMapAsyncStatus status, void *pUserData)
+    {
+        Context *context = reinterpret_cast<Context *>(pUserData);
+        // We set ready to 'true'
+        context->ready = true;
+        if (status != WGPUBufferMapAsyncStatus_Success)
+            return;
+
+        std::cout << "Buffer 2 mapped with status " << status << std::endl;
+
+        // Get a pointer to wherever the driver mapped the GPU memory to the RAM
+        uint8_t *bufferData = (uint8_t *)wgpuBufferGetConstMappedRange(context->buffer, 0, 16);
+
+        std::cout << "bufferData = [";
+        for (int i = 0; i < 16; ++i)
+        {
+            if (i > 0)
+                std::cout << ", ";
+            std::cout << (int)bufferData[i];
+        }
+        std::cout << "]" << std::endl;
+        wgpuBufferUnmap(context->buffer);
+    };
+
+    Context context = {false, m_buffer2};
+
+    wgpuBufferMapAsync(m_buffer2, WGPUMapMode_Read, 0, 16, onBuffer2Mapped, (void *)&context);
+
+    while (!context.ready)
+    {
+        //  ^^^^^^^^^^^^^ Use context.ready here instead of ready
+        wgpuPollEvents(m_device, true);
+    }
 }
 
 void Application::testCommandQueue()
