@@ -1,5 +1,5 @@
-#ifndef WEBGPU_APPLICATION_H_
-#define WEBGPU_APPLICATION_H_
+#ifndef WEBGPU_APPLICATION_HPP_
+#define WEBGPU_APPLICATION_HPP_
 
 #include "webgpu-utils.hpp"
 

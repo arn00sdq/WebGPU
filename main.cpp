@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include <filesystem>
 
 /* sudo apt install libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules */
 
@@ -9,11 +10,10 @@ int main(int, char **)
     {
         return 1;
     }
-    
-   // app.testCommandQueue();
+
+    // app.testCommandQueue();
 
     app.MainLoop();
-
 
     while (app.IsRunning())
     {

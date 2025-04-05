@@ -1,4 +1,3 @@
-#define WEBGPU_CPP_IMPLEMENTATION
 #include "webgpu-utils.hpp"
 
 WGPUAdapter webGPUUtils::requestAdapterSync(WGPUInstance instance,
@@ -238,7 +237,7 @@ WGPURequiredLimits webGPUUtils::getRequiredLimits(WGPUAdapter adapter)
     // We should also tell that we use 1 vertex buffers
     requiredLimits.limits.maxVertexBuffers = 2;
     // Maximum size of a buffer is 6 vertices of 3 float each
-    requiredLimits.limits.maxBufferSize = 6 * 3 * sizeof(float);
+    requiredLimits.limits.maxBufferSize = 15 * 3 * sizeof(float);
     // Maximum stride between 2 consecutive vertices in the vertex buffer
     requiredLimits.limits.maxVertexBufferArrayStride = 3 * sizeof(float);
 
@@ -250,16 +249,17 @@ WGPURequiredLimits webGPUUtils::getRequiredLimits(WGPUAdapter adapter)
     return requiredLimits;
 }
 WGPUTextureFormat webGPUUtils::initializeSurface(WGPUSurface surface,
-                                                 WGPUAdapter adapter, WGPUDevice device)
+                                                 [[maybe_unused]] WGPUAdapter adapter,
+                                                 [[maybe_unused]] WGPUDevice device)
 {
     /* size config */
     WGPUSurfaceConfiguration config = {};
     config.nextInChain = nullptr;
-    config.width = 640;
-    config.height = 480;
+    config.width = 1080;
+    config.height = 960;
 
     /* format config (channels, size per channels, channels type  )*/
-    WGPUTextureFormat surfaceFormat = wgpuSurfaceGetPreferredFormat(surface, adapter);
+    WGPUTextureFormat surfaceFormat = WGPUTextureFormat::WGPUTextureFormat_BGRA8Unorm;
     config.format = surfaceFormat;
     // And we do not need any particular view format:
     config.viewFormatCount = 0;
@@ -268,6 +268,8 @@ WGPUTextureFormat webGPUUtils::initializeSurface(WGPUSurface surface,
     config.device = device;
     config.presentMode = WGPUPresentMode_Fifo;
     config.alphaMode = WGPUCompositeAlphaMode_Auto;
+
+    std::cout << "Surface format: " << magic_enum::enum_name<WGPUTextureFormat>(surfaceFormat) << std::endl;
 
     wgpuSurfaceConfigure(surface, &config);
 
@@ -287,7 +289,7 @@ WGPURenderPassEncoder webGPUUtils::createRenderPass(WGPUCommandEncoder encoder, 
     renderPassColorAttachment.view = targetView;
     renderPassColorAttachment.loadOp = WGPULoadOp_Clear;
     renderPassColorAttachment.storeOp = WGPUStoreOp_Store;
-    renderPassColorAttachment.clearValue = WGPUColor{1.0, 0.0, 0.0, 1.0};
+    renderPassColorAttachment.clearValue = WGPUColor{0.5, 0.5, 0.5, 1.0};
     renderPassColorAttachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
     WGPURenderPassDescriptor renderPassDesc = {};
@@ -308,52 +310,6 @@ WGPUCommandBuffer webGPUUtils::createCommandBuffer(WGPUCommandEncoder encoder)
     cmdBufferDescriptor.label = "Command buffer";
     // immuablle
     return wgpuCommandEncoderFinish(encoder, &cmdBufferDescriptor);
-}
-
-WGPUShaderModule webGPUUtils::createShaderModule(WGPUDevice device)
-{
-
-    const char *shaderSource = R"(
-      
-        struct VertexInput
-        {
-            @location(0) position : vec2f,
-            @location(1) color : vec3f,
-        };
-
-        struct VertexOutput 
-        {
-            @builtin(position) position: vec4f,
-            @location(0) color: vec3f,
-        };      
-
-        @vertex
-        fn vs_main(in: VertexInput) -> VertexOutput {
-            let ratio = 640.0 / 480.0;
-            var out : VertexOutput;
-            out.position = vec4(in.position.x, in.position.y * ratio , 0.0,1.0);
-            out.color = in.color;
-            return out;
-        }
-
-        @fragment
-        fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-            return vec4( in.color, 1.0 );
-        }
-        )";
-
-    // Load the shader module
-    WGPUShaderModuleDescriptor shaderDesc{};
-
-    // We use the extension mechanism to specify the WGSL part of the shader module descriptor
-    WGPUShaderModuleWGSLDescriptor shaderCodeDesc{};
-    // Set the chained struct's header
-    shaderCodeDesc.chain.next = nullptr;
-    shaderCodeDesc.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor;
-    // Connect the chain
-    shaderDesc.nextInChain = &shaderCodeDesc.chain;
-    shaderCodeDesc.code = shaderSource;
-    return wgpuDeviceCreateShaderModule(device, &shaderDesc);
 }
 
 WGPURenderPipeline webGPUUtils::createRenderPipeline(WGPUDevice device,
@@ -464,3 +420,5 @@ WGPURenderPipeline webGPUUtils::createRenderPipeline(WGPUDevice device,
 
     return wgpuDeviceCreateRenderPipeline(device, &pipelineDesc);
 }
+
+// utils

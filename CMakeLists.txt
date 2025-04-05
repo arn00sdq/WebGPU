@@ -8,18 +8,31 @@ else()
     target_link_options(glfw INTERFACE -sUSE_GLFW=3)
 endif()
 
-add_executable( WebGPU 
-            main.cpp        
-            application.hpp
-            application.cpp
-            webgpu-utils.hpp
-            webgpu-utils.cpp
+add_executable(  WebGPU
+        main.cpp        
+        application.hpp
+        application.cpp
+        webgpu-utils.hpp
+        webgpu-utils.cpp
+        codingUtilities/Loader.cpp
+)
+
+target_compile_definitions(WebGPU PRIVATE
+    RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
+)
+
+
+target_include_directories(WebGPU PRIVATE
+    ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/codingUtilities
 )
 
 add_subdirectory(webgpu)
 add_subdirectory(glfw3webgpu)
 
 target_link_libraries(WebGPU PRIVATE glfw webgpu  glfw3webgpu)
+
+
 
 target_copy_webgpu_binaries(WebGPU)
 

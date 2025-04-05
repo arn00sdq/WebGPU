@@ -1,5 +1,6 @@
 #include "application.hpp"
 #include "webgpu-utils.hpp"
+#include "codingUtilities/Loader.hpp"
 #include <cassert>
 
 // We define a function that hides implementation-specific variants of device polling:
@@ -30,7 +31,7 @@ bool Application::Initialize()
 
     // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(640, 480, "Learn WebGPU", nullptr, nullptr);
+    m_window = glfwCreateWindow(1080, 960, "Learn WebGPU", nullptr, nullptr);
     if (!m_window)
     {
         std::cerr << "Could not open window!" << std::endl;
@@ -64,10 +65,12 @@ bool Application::Initialize()
 
 void Application::InitializePipeline()
 {
-    WGPUShaderModule shaderModule = webGPUUtils::createShaderModule(m_device);
+    WGPUShaderModule shaderModule = loader::loadShaderModule(RESOURCE_DIR "/shader.wgsl", m_device);
+    // webGPUUtils::createShaderModule(m_device);
     if (shaderModule == nullptr)
     {
         std::cerr << "Error: shaderModule is null!" << std::endl;
+        exit(1);
     }
 
     m_renderPipeline = webGPUUtils::createRenderPipeline(m_device, shaderModule, m_surfaceFormat);
@@ -81,27 +84,22 @@ void Application::InitializePipeline()
 
 void Application::InitializeBuffer()
 {
+    std::vector<float> pointData;
+    std::vector<float> colorData;
+    std::vector<uint16_t> indexData;
 
-    std::vector<float> pointData = {
-        -0.5, -0.5, // Point #0 (A)
-        +0.5, -0.5, // Point #1
-        +0.5, +0.5, // Point #2 (C)
-        -0.5, +0.5, // Point #3
-    };
+    bool success = loader::loadGeometry(RESOURCE_DIR "/webgpu.txt",
+                                        pointData, colorData, indexData);
 
-    std::vector<uint16_t> indexData = {
-        0, 1, 2, // Triangle #0 connects points #0, #1 and #2
-        0, 2, 3  // Triangle #1 connects points #0, #2 and #3
-    };
-    indexData.resize((indexData.size() + 1) & ~1);
+    // Check for errors
+    if (!success)
+    {
+        std::cerr << "Could not load geometry!" << std::endl;
+        exit(1);
+    }
 
-    std::vector<float> colorData = {
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0,
-        1.0, 1.0, 0.0};
-
-    m_indexCount = static_cast<uint16_t>(indexData.size());
+    m_indexCount = static_cast<uint32_t>(indexData.size());
+    // indexData.resize((indexData.size() + 1) & ~1);
 
     // Create vertex buffer
     WGPUBufferDescriptor bufferDesc{};
@@ -155,9 +153,12 @@ void Application::Draw(WGPUTextureView targetView)
     // descriptor (color , depth ,etc)
     WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
     wgpuRenderPassEncoderSetPipeline(renderPass, m_renderPipeline);
-    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, m_pointBuffer, 0, wgpuBufferGetSize(m_pointBuffer));
-    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 1, m_colorBuffer, 0, wgpuBufferGetSize(m_colorBuffer));
-    wgpuRenderPassEncoderSetIndexBuffer(renderPass, m_indexBuffer, WGPUIndexFormat_Uint16, 0, wgpuBufferGetSize(m_indexBuffer));
+    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, m_pointBuffer, 0,
+                                         wgpuBufferGetSize(m_pointBuffer));
+    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 1, m_colorBuffer, 0,
+                                         wgpuBufferGetSize(m_colorBuffer));
+    wgpuRenderPassEncoderSetIndexBuffer(renderPass, m_indexBuffer, WGPUIndexFormat_Uint16, 0,
+                                        wgpuBufferGetSize(m_indexBuffer));
     wgpuRenderPassEncoderDrawIndexed(renderPass, m_indexCount, 1, 0, 0, 0);
 
     // 2. Encode render pas

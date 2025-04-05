@@ -1,25 +1,7 @@
-#ifndef WEBGPU_CODINGUTILITIES_UTILITIES_H_
-#define WEBGPU_CODINGUTILITIES_UTILITIES_H_
+#ifndef WEBGPU_CODINGUTILITIES_UTILITIES_HPP_
+#define WEBGPU_CODINGUTILITIES_UTILITIES_HPP_
 
-#include "webgpu/webgpu.hpp"
-#ifdef WEBGPU_BACKEND_WGPU
-#include <webgpu/wgpu.h>
-#endif // WEBGPU_BACKEND_WGPU
-
-#include <GLFW/glfw3.h>
-#include <glfw3webgpu.h>
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif // __EMSCRIPTEN__
-
-#include <iostream>
-#include <cassert>
-#include <vector>
-#include <ostream>
-#include <array>
-
-#include <cassert>
+#include "common/DataTypes.hpp"
 
 namespace webGPUUtils
 {
@@ -60,8 +42,6 @@ namespace webGPUUtils
      * @note Content timeline GPU. Queue timeline GPU
      */
     WGPUCommandBuffer createCommandBuffer(WGPUCommandEncoder encoder);
-
-    WGPUShaderModule createShaderModule(WGPUDevice device);
 
     WGPURenderPipeline createRenderPipeline(WGPUDevice device,
                                             WGPUShaderModule shaderModule,
