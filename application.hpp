@@ -43,8 +43,10 @@ private:
 
     WGPUBuffer m_buffer1;
     WGPUBuffer m_buffer2;
-    WGPUBuffer m_vertexBuffer;
-    uint32_t m_vertexCount;
+    WGPUBuffer m_pointBuffer;
+    WGPUBuffer m_indexBuffer;
+    uint32_t m_indexCount;
+    WGPUBuffer m_colorBuffer;
 
     GLFWwindow *m_window;
 };

@@ -1,5 +1,6 @@
 #include "application.hpp"
 #include "webgpu-utils.hpp"
+#include <cassert>
 
 // We define a function that hides implementation-specific variants of device polling:
 void wgpuPollEvents([[maybe_unused]] WGPUDevice device, [[maybe_unused]] bool yieldToWebBrowser)
@@ -80,28 +81,52 @@ void Application::InitializePipeline()
 
 void Application::InitializeBuffer()
 {
-    std::vector<float> vertexData = {
-        // Define a first triangle:
-        -0.1, -0.5,
-        +0.5, -0.5,
-        +0.0, +0.5,
 
-        // Add a second triangle:
-        -0.55f, -0.5,
-        -0.05f, +0.5,
-        -0.55f, +0.5};
+    std::vector<float> pointData = {
+        -0.5, -0.5, // Point #0 (A)
+        +0.5, -0.5, // Point #1
+        +0.5, +0.5, // Point #2 (C)
+        -0.5, +0.5, // Point #3
+    };
 
-    m_vertexCount = static_cast<uint32_t>(vertexData.size() / 2);
+    std::vector<uint16_t> indexData = {
+        0, 1, 2, // Triangle #0 connects points #0, #1 and #2
+        0, 2, 3  // Triangle #1 connects points #0, #2 and #3
+    };
+    indexData.resize((indexData.size() + 1) & ~1);
+
+    std::vector<float> colorData = {
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0,
+        1.0, 1.0, 0.0};
+
+    m_indexCount = static_cast<uint16_t>(indexData.size());
 
     // Create vertex buffer
     WGPUBufferDescriptor bufferDesc{};
     bufferDesc.nextInChain = nullptr;
-    bufferDesc.size = vertexData.size() * sizeof(float);
-    bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Vertex; // Vertex usage here!
+    bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Vertex;
     bufferDesc.mappedAtCreation = false;
-    m_vertexBuffer = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
 
-    wgpuQueueWriteBuffer(m_queue, m_vertexBuffer, 0, vertexData.data(), bufferDesc.size);
+    bufferDesc.label = "Point buffer";
+    bufferDesc.size = pointData.size() * sizeof(float);
+    bufferDesc.size = (bufferDesc.size + 3) & ~3;
+    m_pointBuffer = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
+    wgpuQueueWriteBuffer(m_queue, m_pointBuffer, 0, pointData.data(), bufferDesc.size);
+
+    bufferDesc.label = "color buffer";
+    bufferDesc.size = colorData.size() * sizeof(float);
+    bufferDesc.size = (bufferDesc.size + 3) & ~3;
+    m_colorBuffer = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
+    wgpuQueueWriteBuffer(m_queue, m_colorBuffer, 0, colorData.data(), bufferDesc.size);
+
+    bufferDesc.label = "Index buffer";
+    bufferDesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_Index;
+    bufferDesc.size = indexData.size() * sizeof(uint16_t);
+    bufferDesc.size = (bufferDesc.size + 3) & ~3;
+    m_indexBuffer = wgpuDeviceCreateBuffer(m_device, &bufferDesc);
+    wgpuQueueWriteBuffer(m_queue, m_indexBuffer, 0, indexData.data(), bufferDesc.size);
 }
 
 void Application::MainLoop()
@@ -130,8 +155,10 @@ void Application::Draw(WGPUTextureView targetView)
     // descriptor (color , depth ,etc)
     WGPURenderPassEncoder renderPass = webGPUUtils::createRenderPass(encoder, targetView);
     wgpuRenderPassEncoderSetPipeline(renderPass, m_renderPipeline);
-    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, m_vertexBuffer, 0, wgpuBufferGetSize(m_vertexBuffer));
-    wgpuRenderPassEncoderDraw(renderPass, m_vertexCount, 1, 0, 0);
+    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, m_pointBuffer, 0, wgpuBufferGetSize(m_pointBuffer));
+    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 1, m_colorBuffer, 0, wgpuBufferGetSize(m_colorBuffer));
+    wgpuRenderPassEncoderSetIndexBuffer(renderPass, m_indexBuffer, WGPUIndexFormat_Uint16, 0, wgpuBufferGetSize(m_indexBuffer));
+    wgpuRenderPassEncoderDrawIndexed(renderPass, m_indexCount, 1, 0, 0, 0);
 
     // 2. Encode render pas
     wgpuRenderPassEncoderEnd(renderPass);
@@ -191,7 +218,9 @@ bool Application::IsRunning()
 
 void Application::Terminate()
 {
-    wgpuBufferRelease(m_vertexBuffer);
+    wgpuBufferRelease(m_pointBuffer);
+    wgpuBufferRelease(m_indexBuffer);
+    wgpuBufferRelease(m_colorBuffer);
 
     wgpuRenderPipelineRelease(m_renderPipeline);
     glfwDestroyWindow(m_window);

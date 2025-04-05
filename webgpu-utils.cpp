@@ -234,14 +234,15 @@ WGPURequiredLimits webGPUUtils::getRequiredLimits(WGPUAdapter adapter)
     WGPURequiredLimits requiredLimits{};
     setDefault(requiredLimits.limits);
 
-    // We use at most 1 vertex attribute for now
-    requiredLimits.limits.maxVertexAttributes = 1;
+    requiredLimits.limits.maxVertexAttributes = 2;
     // We should also tell that we use 1 vertex buffers
-    requiredLimits.limits.maxVertexBuffers = 1;
-    // Maximum size of a buffer is 6 vertices of 2 float each
-    requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
+    requiredLimits.limits.maxVertexBuffers = 2;
+    // Maximum size of a buffer is 6 vertices of 3 float each
+    requiredLimits.limits.maxBufferSize = 6 * 3 * sizeof(float);
     // Maximum stride between 2 consecutive vertices in the vertex buffer
-    requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+    requiredLimits.limits.maxVertexBufferArrayStride = 3 * sizeof(float);
+
+    requiredLimits.limits.maxInterStageShaderComponents = 3;
 
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
@@ -311,15 +312,33 @@ WGPUCommandBuffer webGPUUtils::createCommandBuffer(WGPUCommandEncoder encoder)
 
 WGPUShaderModule webGPUUtils::createShaderModule(WGPUDevice device)
 {
+
     const char *shaderSource = R"(
+      
+        struct VertexInput
+        {
+            @location(0) position : vec2f,
+            @location(1) color : vec3f,
+        };
+
+        struct VertexOutput 
+        {
+            @builtin(position) position: vec4f,
+            @location(0) color: vec3f,
+        };      
+
         @vertex
-        fn vs_main(@location(0) in_vertex_position: vec2f) -> @builtin(position) vec4f {
-            return vec4f(in_vertex_position, 0.0, 1.0);
+        fn vs_main(in: VertexInput) -> VertexOutput {
+            let ratio = 640.0 / 480.0;
+            var out : VertexOutput;
+            out.position = vec4(in.position.x, in.position.y * ratio , 0.0,1.0);
+            out.color = in.color;
+            return out;
         }
 
         @fragment
-        fn fs_main() -> @location(0) vec4f {
-            return vec4f(0.0, 0.4, 1.0, 1.0);
+        fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+            return vec4( in.color, 1.0 );
         }
         )";
 
@@ -418,24 +437,30 @@ WGPURenderPipeline webGPUUtils::createRenderPipeline(WGPUDevice device,
     // ----- Vertex Buffer Layout -----
 
     // Vertex fetch
-    WGPUVertexBufferLayout vertexBufferLayout{};
-    WGPUVertexAttribute positionAttrib;
-    // Corresponds to @location(...)
-    positionAttrib.shaderLocation = 0;
-    // Means vec2f in the shader
-    positionAttrib.format = WGPUVertexFormat_Float32x2;
-    // Index of the first element
-    positionAttrib.offset = 0;
+    std::vector<WGPUVertexBufferLayout> vertexBuffersLayout(2);
 
-    vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.attributes = &positionAttrib;
+    WGPUVertexAttribute positionAttribs;
+    positionAttribs.shaderLocation = 0; // @location(0)
+    positionAttribs.format = WGPUVertexFormat_Float32x2;
+    positionAttribs.offset = 0;
 
-    // == Common to attributes from the same buffer ==
-    vertexBufferLayout.arrayStride = 2 * sizeof(float);
-    vertexBufferLayout.stepMode = WGPUVertexStepMode_Vertex;
+    vertexBuffersLayout[0].attributeCount = 1;
+    vertexBuffersLayout[0].attributes = &positionAttribs;
+    vertexBuffersLayout[0].arrayStride = 2 * sizeof(float);
+    vertexBuffersLayout[0].stepMode = WGPUVertexStepMode_Vertex;
 
-    pipelineDesc.vertex.bufferCount = 1;
-    pipelineDesc.vertex.buffers = &vertexBufferLayout;
+    WGPUVertexAttribute colorAttribs;
+    colorAttribs.shaderLocation = 1;                  // @location(1)
+    colorAttribs.format = WGPUVertexFormat_Float32x3; // different type! rgb
+    colorAttribs.offset = 0;
+
+    vertexBuffersLayout[1].attributeCount = 1;
+    vertexBuffersLayout[1].attributes = &colorAttribs;
+    vertexBuffersLayout[1].arrayStride = 3 * sizeof(float);
+    vertexBuffersLayout[1].stepMode = WGPUVertexStepMode_Vertex;
+
+    pipelineDesc.vertex.bufferCount = 2;
+    pipelineDesc.vertex.buffers = vertexBuffersLayout.data();
 
     return wgpuDeviceCreateRenderPipeline(device, &pipelineDesc);
 }
