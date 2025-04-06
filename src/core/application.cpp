@@ -1,5 +1,4 @@
 #include "application.hpp"
-#include "webgpu-utils.hpp"
 #include "codingUtilities/Loader.hpp"
 #include <cassert>
 
@@ -20,7 +19,6 @@ void wgpuPollEvents([[maybe_unused]] WGPUDevice device, [[maybe_unused]] bool yi
 
 bool Application::Initialize()
 {
-    std::cout << "0" << std::endl;
     if (!glfwInit())
     {
         std::cerr << "Could not initialize GLFW!" << std::endl;

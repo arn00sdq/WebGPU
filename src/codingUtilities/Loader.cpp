@@ -1,6 +1,5 @@
-#include "../codingUtilities/Loader.hpp"
+#include "codingUtilities/Loader.hpp"
 #include <fstream>
-#include "Loader.hpp"
 
 bool loader::loadGeometry(std::filesystem::path const &path,
                           std::vector<float> &pointData,

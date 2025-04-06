@@ -1,7 +1,7 @@
 #ifndef WEBGPU_APPLICATION_HPP_
 #define WEBGPU_APPLICATION_HPP_
 
-#include "webgpu-utils.hpp"
+#include "codingUtilities/webgpu-utils.hpp"
 
 class Application
 {

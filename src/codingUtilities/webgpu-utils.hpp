@@ -1,7 +1,7 @@
 #ifndef WEBGPU_CODINGUTILITIES_UTILITIES_HPP_
 #define WEBGPU_CODINGUTILITIES_UTILITIES_HPP_
 
-#include "common/DataTypes.hpp"
+#include "../common/DataTypes.hpp"
 
 namespace webGPUUtils
 {

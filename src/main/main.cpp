@@ -1,4 +1,4 @@
-#include "application.hpp"
+#include "core/application.hpp"
 #include <filesystem>
 
 /* sudo apt install libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules */

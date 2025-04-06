@@ -1,7 +1,7 @@
 #ifndef WEBGPU_CODING_UTILITIES_LOADER_HPP_
 #define WEBGPU_CODING_UTILITIES_LOADER_HPP_
 
-#include "../common/DataTypes.hpp"
+#include "common/DataTypes.hpp"
 #include <filesystem>
 
 namespace loader

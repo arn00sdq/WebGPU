@@ -1,39 +1,40 @@
 cmake_minimum_required(VERSION 3.0...3.25)
 
 if (NOT EMSCRIPTEN)
-    add_subdirectory(glfw)
+    add_subdirectory(external/glfw)
 else()
     # Emscripten has built-in support for GLFW but requires the `-sUSE_GLFW=3` link option:
-    add_library(glfw INTERFACE)
-    target_link_options(glfw INTERFACE -sUSE_GLFW=3)
+    add_library(external/glfw INTERFACE)
+    target_link_options(external/glfw INTERFACE -sUSE_GLFW=3)
 endif()
 
-add_executable(  WebGPU
-        main.cpp        
-        application.hpp
-        application.cpp
-        webgpu-utils.hpp
-        webgpu-utils.cpp
-        codingUtilities/Loader.cpp
+# === WebGPU Submodules ===
+add_subdirectory(webgpu)
+add_subdirectory(external/glfw3webgpu)
+
+# === Executable ===
+add_executable( WebGPU
+        src/main/main.cpp        
+        src/core/application.cpp
+        src/codingUtilities/webgpu-utils.cpp
+        src/codingUtilities/Loader.cpp
 )
 
 target_compile_definitions(WebGPU PRIVATE
     RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
 )
 
-
+# === Include Paths ===
 target_include_directories(WebGPU PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/codingUtilities
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw3webgpu
 )
 
-add_subdirectory(webgpu)
-add_subdirectory(glfw3webgpu)
+# === Linking ===
+target_link_libraries(WebGPU PRIVATE glfw webgpu glfw3webgpu)
 
-target_link_libraries(WebGPU PRIVATE glfw webgpu  glfw3webgpu)
-
-
-
+# === WebGPU binaries ===
 target_copy_webgpu_binaries(WebGPU)
 
 set_target_properties(WebGPU PROPERTIES
