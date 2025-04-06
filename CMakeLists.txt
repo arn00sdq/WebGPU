@@ -9,7 +9,7 @@ else()
 endif()
 
 # === WebGPU Submodules ===
-add_subdirectory(webgpu)
+add_subdirectory(external/webgpu)
 add_subdirectory(external/glfw3webgpu)
 
 # === Executable ===
@@ -29,6 +29,7 @@ target_include_directories(WebGPU PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw3webgpu
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/webgpu
 )
 
 # === Linking ===
