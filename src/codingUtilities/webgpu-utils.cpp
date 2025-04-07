@@ -269,8 +269,6 @@ WGPUTextureFormat webGPUUtils::initializeSurface(WGPUSurface surface,
     config.presentMode = WGPUPresentMode_Fifo;
     config.alphaMode = WGPUCompositeAlphaMode_Auto;
 
-    std::cout << "Surface format: " << magic_enum::enum_name<WGPUTextureFormat>(surfaceFormat) << std::endl;
-
     wgpuSurfaceConfigure(surface, &config);
 
     return surfaceFormat;

@@ -18,6 +18,9 @@ add_executable( WebGPU
         src/core/application.cpp
         src/codingUtilities/webgpu-utils.cpp
         src/codingUtilities/Loader.cpp
+        src/common/ThirdPartyLibs.cpp
+
+
 )
 
 target_compile_definitions(WebGPU PRIVATE
@@ -30,6 +33,7 @@ target_include_directories(WebGPU PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw3webgpu
     ${CMAKE_CURRENT_SOURCE_DIR}/external/webgpu
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/tools
 )
 
 # === Linking ===

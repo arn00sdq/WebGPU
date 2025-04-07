@@ -13,6 +13,8 @@
 #include <emscripten.h>
 #endif // __EMSCRIPTEN__
 
+#include "stb_image.h"
+
 #include <array>
 #include <cassert>
 // #include <cmath>
@@ -28,7 +30,5 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <vector>
-
-#include "../codingUtilities/MagicEnum.hpp"
 
 #endif
