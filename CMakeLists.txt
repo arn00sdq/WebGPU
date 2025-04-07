@@ -19,6 +19,7 @@ add_executable( WebGPU
         src/codingUtilities/webgpu-utils.cpp
         src/codingUtilities/Loader.cpp
         src/common/ThirdPartyLibs.cpp
+        src/colorSorter/colorSorter.cpp
 
 
 )
