@@ -54,6 +54,10 @@ bool Application::Initialize()
 
     wgpuAdapterRelease(m_adapter);
 
+    // func
+    std::string path = std::filesystem::current_path().string() + m_imgSortPath.data();
+    m_imageData = std::make_unique<ImageData>(path);
+
     InitializePipeline();
 
     InitializeBuffer();

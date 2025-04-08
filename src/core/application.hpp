@@ -2,10 +2,14 @@
 #define WEBGPU_APPLICATION_HPP_
 
 #include "codingUtilities/webgpu-utils.hpp"
+#include "colorSorter/colorSorter.hpp"
+#include <filesystem>
 
 class Application
 {
 public:
+    std::unique_ptr<ImageData> m_imageData;
+
     bool Initialize();
 
     void MainLoop();
@@ -18,12 +22,15 @@ public:
 
     void testCommandQueue();
 
+    static constexpr std::string_view m_imgSortPath = "/resources/testSort.png";
+
 private:
     /**
      * @brief Ask each frame the next available texture
      * @return A valid view
      */
-    WGPUTextureView GetNextSurfaceTextureView();
+    WGPUTextureView
+    GetNextSurfaceTextureView();
 
     void InitializePipeline();
 
