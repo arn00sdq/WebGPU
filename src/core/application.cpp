@@ -58,6 +58,8 @@ bool Application::Initialize()
     std::string path = std::filesystem::current_path().string() + m_imgSortPath.data();
     m_imageData = std::make_unique<ImageData>(path);
 
+    m_imageData->sortColor();
+
     InitializePipeline();
 
     InitializeBuffer();

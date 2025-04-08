@@ -15,27 +15,43 @@ ImageData::ImageData(std::string const &filename) : m_filename(filename)
 
     size_t img_size = m_width * m_height * m_channels;
 
-    m_r.reserve(m_width * m_height);
-    m_g.reserve(m_width * m_height);
-    m_b.reserve(m_width * m_height);
-    m_sortedPixel.reserve(m_width * m_height);
-    if (m_channels == 4)
-        m_blending.reserve(m_width * m_height);
-        
+    m_pixels.reserve(m_width * m_height);
+    m_sortedPixels.reserve(m_width * m_height);
+
     for (auto p = data; p != data + img_size; p += m_channels)
     {
-        m_r.push_back(static_cast<int>(p[0]));
-        // std::cout << "R: " << static_cast<int>(p[0]) << std::endl;
-        m_g.push_back(static_cast<int>(p[1]));
-        m_b.push_back(static_cast<int>(p[2]));
-        if (m_channels == 4)
-            m_blending.push_back(static_cast<int>(p[3]));
+        PixelColor pixelColor{static_cast<int>(p[0]),
+                              static_cast<int>(p[1]),
+                              static_cast<int>(p[2]),
+                              m_channels == 4 ? static_cast<int>(p[3]) : 255};
+        m_pixels.push_back(pixelColor);
     }
 
+    std::cout << m_pixels.size() << "-- " << std::endl;
     stbi_image_free(data);
 }
 
-ImageData::sortColor()
+void ImageData::sortColor()
 {
-    //todo
+    auto rbgToHex = [](int r, int g, int b)
+    {
+        return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+    };
+
+    for (size_t i= 0; i < m_pixels.size(); ++i)
+    {
+        int hexValue = rbgToHex(m_pixels[i].m_r, m_pixels[i].m_g, m_pixels[i].m_b);
+        auto sortedPixelItr = m_sortedPixels.find(hexValue);
+        if (sortedPixelItr == nullptr)
+        {
+            m_sortedPixels.insert({hexValue, 1});
+        }
+        else
+        {
+            sortedPixelItr->second++;
+        }
+    }
+
+    // for (auto& p : m_sortedPixels)
+    //     std::cout << ' ' << p.first << " => " << p.second << '\n';
 }
